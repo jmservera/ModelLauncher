@@ -5,8 +5,9 @@
       "samplingSettings": {
         "isEnabled": true,
         "excludedTypes": "Request"
-      }
+      }      
     }
+    
   },
   "managedDependency": {
     "enabled": true

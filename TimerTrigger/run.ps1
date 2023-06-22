@@ -59,13 +59,29 @@ class FunctionsContext {
         foreach($item in $fileList){
             $file = $files | where-object { $_.Name -like $folder + "/" + $item.filename }
             if ($null -eq $file) {
-                Write-Verbose "File $($item.filename) is still missing in $($folder)!"
+                Write-Warning "File $($item.filename) is still missing in $($folder)!"
                 return $false
             }
         }
         return $true
     }
 
+    [void] MoveBlob([object] $blob, [string] $NewName) {
+        $blob | Copy-AzStorageBlob -DestContainer $this.ContainerName -DestBlob $NewName -Force
+        $blob | Remove-AzStorageBlob -Force
+    }
+
+    [void] MoveToProcessing([string] $Name) {
+        $folder = Split-Path $Name -Parent
+
+        # gets all the files in the folder        
+        $files = $this.GetAzureStorageFilesFromFolder($folder)
+        foreach($file in $files){
+            $newFile=$file.Name.Replace("upload/", "processing/")
+            Write-Host "Moving $($file.Name) to $($newFile)"
+            $this.MoveBlob($file, $newFile)
+        }
+    }
 }
 
 
@@ -81,7 +97,8 @@ $files = $context.GetNewCSVFiles()
 
 foreach ($item in $files) {
     if ($context.CheckAllFiles($item.Name)) {
-        Write-Host "File $($item.Name) is ready to be processed!"
+        Write-Host "File $($item.Name) is ready to be processed, moving to processing folder!"
+        $context.MoveToProcessing($item.Name)
     }
 }
 # Write an information log with the current time.
