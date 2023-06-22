@@ -5,13 +5,16 @@ class FunctionsContext {
     [object] $StorageContext
     [string] $ContainerName
 
-    FunctionsContext([string]$StorageAccountName,[string]$StorageAccountKey,[string]$ContainerName){
-        $this.ContainerName=$ContainerName
+    FunctionsContext([string]$StorageAccountName, [string]$StorageAccountKey, [string]$ContainerName) {
+        $this.ContainerName = $ContainerName
+        Write-Verbose "Connecting to Storage Account $StorageAccountName"
         if ( $StorageAccountName -eq "devstoreaccount1") {
+            Write-Host "Using local storage account"
             $this.StorageContext = New-AzStorageContext -Local
         }
         else {
             if (-not $StorageAccountKey) {
+                Write-Host "StorageAccountKey not provided, using connected account"
                 $this.StorageContext = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
             }
             else {
@@ -19,41 +22,50 @@ class FunctionsContext {
             }
         }
     }
-}
-function Get-AzureStorageFilesFromFolder {
-    param(
-        [Parameter(Mandatory = $true)]        
-        [FunctionsContext]$Context,
-        [Parameter(Mandatory = $true)]
-        [string]$Prefix
-    )
 
-    # List all the files in the container
-    return Get-AzStorageBlob -Container $Context.ContainerName -Context $Context.StorageContext -Prefix $Prefix
-}
+    # Get all files from a folder in the current Azure Storage
+    [Object[]] GetAzureStorageFilesFromFolder([string]$Prefix) {
+        return Get-AzStorageBlob -Container $this.ContainerName -Context $this.StorageContext -Prefix $Prefix
+    }
 
-function Get-NewCSVFiles {
-    param(
-        [Parameter(Mandatory = $true)]        
-        [FunctionsContext]$Context,
-        [Parameter(Mandatory = $false)]
-        [string]$Prefix="upload"
-    )
-    return Get-AzureStorageFilesFromFolder -Context $Context -Prefix $Prefix | where-object {$_.Name -like "*.csv"}
-}
+    [Object] GetBlob([string]$Name) {
+        return Get-AzStorageBlob -Container $this.ContainerName -Context $this.StorageContext -Blob $Name
+    }
 
-function Check-AllFiles {
-    param(
-        [Parameter(Mandatory = $true)]
-        [FunctionsContext]$Context,
-        [Parameter(Mandatory = $true)]
-        [string]$Name
-    )
+    [string] GetBlobText([string]$Name) {
+        $container = Get-AzStorageContainer -Name $this.ContainerName -Context $this.StorageContext
+        #Get reference for file
+        $client = $container.CloudBlobContainer.GetBlockBlobReference($Name)
+        #Read file contents into memory
+        return $client.DownloadText()
+    }
 
-    Split-Path $Name -Parent | Write-Host
-    Split-Path $Name -Leaf | Write-Host
+    # List all the .csv files in the upload folder
+    [Object[]] GetNewCSVFiles() {
+        return $this.GetAzureStorageFilesFromFolder("upload") | where-object { $_.Name -like "*.csv" }
+    }
 
-    return $false
+    # Checks if all the files listed in the csv file are present in the upload folder
+    [bool] CheckAllFiles([string]$Name) {   
+        $folder = Split-Path $Name -Parent
+
+        # gets all the files in the folder
+        $files = $this.GetAzureStorageFilesFromFolder($folder) #| where-object { $_.Name -notlike "*.csv" } # uncomment to exclude csv files
+
+        # downloads and interprets the csv file
+        $fileList = $this.GetBlobText($Name) | ConvertFrom-Csv -Delimiter "," -Header "filename","desc"
+
+        # checks one by one if the listed files are present in the folder
+        foreach($item in $fileList){
+            $file = $files | where-object { $_.Name -like $folder + "/" + $item.filename }
+            if ($null -eq $file) {
+                Write-Verbose "File $($item.filename) is still missing in $($folder)!"
+                return $false
+            }
+        }
+        return $true
+    }
+
 }
 
 
@@ -64,12 +76,12 @@ $currentUTCtime = (Get-Date).ToUniversalTime()
 if ($Timer.IsPastDue) {
     Write-Host "PowerShell timer is running late!"
 }
-$context = [FunctionsContext]::new($env:AzureAccountName,$env:AzureAccountKey,$env:ContainerName)
-$files = Get-NewCSVFiles -Context $context
+$context = [FunctionsContext]::new($env:AzureAccountName, $env:AzureAccountKey, $env:ContainerName)
+$files = $context.GetNewCSVFiles()
 
 foreach ($item in $files) {
-    if (Check-AllFiles -Context $context -Name $item.Name){
-        Write-Host "File $item.Name is ready to be processed!"
+    if ($context.CheckAllFiles($item.Name)) {
+        Write-Host "File $($item.Name) is ready to be processed!"
     }
 }
 # Write an information log with the current time.
