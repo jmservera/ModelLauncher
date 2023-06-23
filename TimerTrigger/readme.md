@@ -8,4 +8,9 @@ For a `TimerTrigger` to work, you provide a schedule in the form of a [cron expr
 
 ## Learn more
 
-<TODO> Documentation
+Add these variables to your environment:
+
+    "AzureAccountName": "account name for the azure storage",
+    "AzureAccountKey": "key for the storage account",
+    "ContainerName": "name of the container",
+    "ResourceGroupName":"name of the resource group where the container instance will be created"
