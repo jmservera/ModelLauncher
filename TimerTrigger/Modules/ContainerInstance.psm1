@@ -13,9 +13,9 @@ function Start-Container($ResourceGroupName, $JobId, $TriggerMetadata, $Location
 
     Write-Host "Starting container $containerName in resource group $ResourceGroupName at $Location"
     # TODO: container group name can be fixed to improve performance but at the risk of not being able to run multiple jobs at the same time
-    $containerGroup = New-AzContainerGroup -ResourceGroupName $ResourceGroupName -Name $containerName `
+    New-AzContainerGroup -ResourceGroupName $ResourceGroupName -Name $containerName `
         -Container $container -OsType Linux `
-        -Location $Location -RestartPolicy Never
+        -Location $Location -RestartPolicy Never -NoWait
     # if($containerGroup){
     #     Write-Host " $containerName started"
     # }

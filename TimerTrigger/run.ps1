@@ -18,9 +18,11 @@ foreach ($item in $files) {
             $workName = (Split-Path $item.Name -Parent | Split-Path -Leaf).ToLower()
             Write-Host "Processing $workName"            
             Start-Container $env:ResourceGroupName $workName "metadata or other params"
-            Write-Host "Process $workName started asynchronously $((Get-Date).ToUniversalTime())"
+            $currentDate = (Get-Date).ToUniversalTime()
+            Write-Host "Process $workName started asynchronously $currentDate"
         }
     }
 }
 
-Write-Host "PowerShell timer trigger function end $((Get-Date).ToUniversalTime())"
+$currentDate = (Get-Date).ToUniversalTime()
+Write-Host "PowerShell timer trigger function end $currentDate"
