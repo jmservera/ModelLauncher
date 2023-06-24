@@ -4,10 +4,6 @@ using module ./Modules/ContainerInstance.psm1
 # Input bindings are passed in via param block.
 param($Timer)
 
-
-# Get the current universal time in the default string format.
-$currentUTCtime = (Get-Date).ToUniversalTime()
-
 # The 'IsPastDue' property is 'true' when the current function invocation is later than scheduled.
 if ($Timer.IsPastDue) {
     Write-Host "PowerShell timer is running late!"
@@ -19,13 +15,12 @@ foreach ($item in $files) {
     if ($context.CheckAllFiles($item.Name)) {
         Write-Host "File $($item.Name) is ready to be processed, moving to processing folder!"
         if($context.MoveToProcessing($item.Name)){
-            $workName = (Split-Path $item.Name -Parent | Split-Path -Leaf).ToLower()            
+            $workName = (Split-Path $item.Name -Parent | Split-Path -Leaf).ToLower()
+            Write-Information "Processing $workName"            
             Start-Container $env:ResourceGroupName $workName "metadata or other params"
+            Write-Information "Process $workName started asynchronously $((Get-Date).ToUniversalTime())"
         }
     }
 }
 
-# Write an information log with the current time.
-Write-Host "PowerShell timer trigger function ran! TIME: $currentUTCtime"
-
-
+Write-Information "PowerShell timer trigger function end $((Get-Date).ToUniversalTime())"

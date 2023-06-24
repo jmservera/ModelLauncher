@@ -11,10 +11,17 @@ function Start-Container($ResourceGroupName, $JobId, $TriggerMetadata, $Location
         $Location = $(Get-AzResourceGroup -ResourceGroupName $ResourceGroupName).Location
     }
 
+    Write-Information "Starting container $containerName in resource group $ResourceGroupName at $Location"
     # TODO: container group name can be fixed to improve performance but at the risk of not being able to run multiple jobs at the same time
-    New-AzContainerGroup -ResourceGroupName $ResourceGroupName -Name $containerName `
+    $containerGroup = New-AzContainerGroup -ResourceGroupName $ResourceGroupName -Name $containerName `
         -Container $container -OsType Linux `
         -Location $Location -RestartPolicy Never
+    if($containerGroup){
+        Write-Information " $containerName started"
+    }
+    else{
+        Write-Warning " $containerName failed to start"
+    }    
 }
 
 Export-ModuleMember -Function Start-Container
