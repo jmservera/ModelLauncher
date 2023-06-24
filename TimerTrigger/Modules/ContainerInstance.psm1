@@ -16,12 +16,12 @@ function Start-Container($ResourceGroupName, $JobId, $TriggerMetadata, $Location
     $containerGroup = New-AzContainerGroup -ResourceGroupName $ResourceGroupName -Name $containerName `
         -Container $container -OsType Linux `
         -Location $Location -RestartPolicy Never
-    if($containerGroup){
-        Write-Host " $containerName started"
-    }
-    else{
-        Write-Warning " $containerName failed to start"
-    }    
+    # if($containerGroup){
+    #     Write-Host " $containerName started"
+    # }
+    # else{
+    #     Write-Warning " $containerName failed to start"
+    # }    
 }
 
 Export-ModuleMember -Function Start-Container
