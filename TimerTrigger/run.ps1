@@ -16,11 +16,11 @@ foreach ($item in $files) {
         Write-Host "File $($item.Name) is ready to be processed, moving to processing folder!"
         if($context.MoveToProcessing($item.Name)){
             $workName = (Split-Path $item.Name -Parent | Split-Path -Leaf).ToLower()
-            Write-Information "Processing $workName"            
+            Write-Host "Processing $workName"            
             Start-Container $env:ResourceGroupName $workName "metadata or other params"
-            Write-Information "Process $workName started asynchronously $((Get-Date).ToUniversalTime())"
+            Write-Host "Process $workName started asynchronously $((Get-Date).ToUniversalTime())"
         }
     }
 }
 
-Write-Information "PowerShell timer trigger function end $((Get-Date).ToUniversalTime())"
+Write-Host "PowerShell timer trigger function end $((Get-Date).ToUniversalTime())"
