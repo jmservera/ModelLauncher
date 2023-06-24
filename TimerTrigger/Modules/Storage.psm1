@@ -67,7 +67,7 @@ class Storage {
             }
         }
         Write-Host "All files listed in $($Name) are present in $($folder)!"
-        Format-Table -InputObject $filelist | Write-Host
+        # Format-Table -InputObject $filelist | Out-String | Write-Host
         return $true
     }
 

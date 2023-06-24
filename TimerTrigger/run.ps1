@@ -19,7 +19,8 @@ foreach ($item in $files) {
     if ($context.CheckAllFiles($item.Name)) {
         Write-Host "File $($item.Name) is ready to be processed, moving to processing folder!"
         if($context.MoveToProcessing($item.Name)){
-            Start-Container $env:ResourceGroupName $item.Name "other metadata"
+            $workName = (Split-Path $item.Name -Parent | Split-Path -Leaf).ToLower()            
+            Start-Container $env:ResourceGroupName $workName "metadata or other params"
         }
     }
 }

@@ -1,15 +1,18 @@
 function Start-Container($ResourceGroupName, $JobId, $TriggerMetadata, $Location) {
     $env1 = New-AzContainerInstanceEnvironmentVariableObject -Name "JobId" -Value $JobId
-    $container = New-AzContainerInstanceObject -Name test-container -Image alpine -RequestCpu 1 -RequestMemoryInGb 1.5 `
+    # todo: check max length of container name
+    $containerName = [uri]::EscapeDataString($JobId) # escape special characters
+    $container = New-AzContainerInstanceObject -Name $containerName -Image alpine -RequestCpu 1 -RequestMemoryInGb 1.5 `
         -EnvironmentVariable @($env1) `
-        -Command ("printenv")
-    #-Command ("echo","`"From source: $JobId From Env: `$JobId`"") `
+        -Command ("echo","$($JobId): $TriggerMetadata at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
+        #-Command ("printenv")
 
     if (-not $Location) {
         $Location = $(Get-AzResourceGroup -ResourceGroupName $ResourceGroupName).Location
     }
 
-    New-AzContainerGroup -ResourceGroupName $ResourceGroupName -Name $JobId `
+    # TODO: container group name can be fixed to improve performance but at the risk of not being able to run multiple jobs at the same time
+    New-AzContainerGroup -ResourceGroupName $ResourceGroupName -Name $containerName `
         -Container $container -OsType Linux `
         -Location $Location -RestartPolicy Never
 }
